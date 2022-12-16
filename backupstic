@@ -1,0 +1,334 @@
+#!/usr/bin/env bash
+# -------------------------------------------------------------------------
+# backupstic: A simple wrapper script for rustic backup tool
+# -------------------------------------------------------------------------
+# GitHub: https://github.com/tricarte/backupstic
+# -------------------------------------------------------------------------
+
+#--------------------------
+# Utility functions
+#--------------------------
+
+red='\033[0;31m'
+green='\033[0;32m'
+purple='\033[0;35m'
+normal='\033[0m'
+
+# Utility functions
+# https://github.com/CodelyTV/dotly/blob/master/installer#L21
+_w() {
+  local -r text="${1:-}"
+  echo -e "$text"
+}
+_a() { _w " > $1"; }                 # Alert
+_e() { _a "${red}$1${normal}" >&2; } # Error
+_s() { _a "${green}$1${normal}"; }   # Success
+
+#--------------------------
+# End of Utility functions
+#--------------------------
+
+#--------------------------
+# Prerequisites
+#--------------------------
+
+RUSTIC=$(command -v "rustic")
+if [[ ! $RUSTIC ]]; then
+  _e "Rustic is not installed."
+  exit 1
+fi
+
+if [[ -n "$XDG_CURRENT_DESKTOP" ]]; then
+  NOTIFYBIN=$(command -v notify-send)
+fi
+
+#-------------------------
+# End of prerequisites
+#-------------------------
+
+#-------------------------------------------------------------------
+# Global Option Parsing
+#-------------------------------------------------------------------
+PARAMS=""
+while (("$#")); do
+  case "$1" in
+  -y | --yes)
+    PROCEED=1
+    shift # Pop the first element off the array on each iteration.
+    ;;
+  -h | --help)
+    SUBHELP=1
+    shift
+    ;;
+  -e | --edit)
+    EDIT=1
+    shift
+    ;;
+  --* | -*) # unsupported flags
+    _e "Error: Unsupported flag $1" >&2
+    exit 1
+    ;;
+  *) # preserve positional arguments
+    PARAMS="$PARAMS $1"
+    shift
+    ;;
+  esac
+done
+
+eval set -- "$PARAMS"
+
+progname=$(basename "$0")
+subcommand=$1
+
+function doAll() {
+  if [[ -d "${HOME}/.config/rustic" ]]; then
+    for config in "${HOME}"/.config/rustic/*.toml; do
+      eval "local $(grep -E ^repository "$config" | tr -d ' ')"
+      profile=$(basename "$config" .toml)
+      if [[ -d "$repository" ]]; then
+        case $1 in
+        forget)
+          $RUSTIC -P "$profile" forget --prune --instant-delete || break
+          ;;
+        backup)
+          $RUSTIC -P "$profile" backup || break
+          ;;
+        esac
+      else
+        _e "Repository for profile \"$profile\" is not accessible.
+It is pointing to ${repository}."
+        exit 1
+      fi
+    done
+  fi
+}
+
+#----------------
+#  SUBCOMMANDS
+#----------------
+
+#------------------------------------------------------
+# Main subcommand controller
+#------------------------------------------------------
+function sub_default() {
+  _w "
+${progname}: A wrapper script for rustic. Works only with backup profiles.
+
+    Usage: ${purple}${progname} <subcommand> [optional_profile_name] OPTIONS${normal}
+
+Subcommands:
+
+    ${purple}backup${normal}          Backup all profiles or a specific profile.
+    ${purple}forget${normal}          Prune snapshots according to 'forget' settings in the profile.
+    ${purple}create${normal}          Create a new profile.
+
+For help with each subcommand run:
+${purple}$progname <subcommand> -h|--help${normal}
+"
+  exit
+}
+export -f sub_default
+
+function sub_create() {
+  if [[ $SUBHELP ]]; then
+    _w "Usage: $progname create [profile_name]"
+    _w ""
+    _w "       Create a new profile in ~/.config/rustic."
+    _w "       Give the profile name without toml extension."
+    _w ""
+    return
+  fi
+
+  profile="$1"
+
+  if [[ -z "$profile" ]]; then
+    _e "You did not specify the profile name."
+    exit 1
+  fi
+
+  if [[ -f "${HOME}/.config/rustic/${profile}.toml" ]]; then
+    _w "Profile already exists."
+    exit
+  fi
+
+  echo '[global]
+repository = "/media/change_me_username/change_me_deviceID/rustic-backups/documents"
+# password-file =  "/root/key-rustic"
+no-cache = true # no cache needed for local repository
+password-command = "gpg --no-tty -q -d /etc/.rustic-pass.gpg"
+
+[forget]
+# keep-hourly = 20
+# keep-daily = 14
+keep-daily = 3
+# keep-weekly = 8
+# keep-monthly = 24
+# keep-yearly = 10
+
+[backup]
+one-filesystem = true
+
+[[backup.sources]]
+source = "/home/change_me_username/Documents"' >"${HOME}/.config/rustic/${profile}.toml"
+
+  if [[ -f "${HOME}/.config/rustic/${1}.toml" ]]; then
+    if [[ $EDIT ]]; then
+      $(command -v vim) "${HOME}/.config/rustic/${profile}.toml"
+    else
+      _w "Profile successfully created."
+    fi
+  else
+    _e "Profile could not be created."
+    exit 1
+  fi
+}
+export -f sub_create
+
+function sub_edit() {
+  if [[ $SUBHELP ]]; then
+    _w "Usage: $progname edit [profile_name]"
+    _w ""
+    _w "       Start editing the profile in vim."
+    _w ""
+    return
+  fi
+
+  profile="$1"
+
+  if [[ -z "$profile" ]]; then
+    _e "You did not specify the profile name."
+    exit 1
+  fi
+
+  if [[ ! -f "${HOME}/.config/rustic/${profile}.toml" ]]; then
+    _e "Profile does not exist."
+    exit 1
+  fi
+
+  if [[ -n "$VISUAL" ]]; then
+    $VISUAL "${HOME}/.config/rustic/${profile}.toml"
+    exit
+  elif [[ -n "$EDITOR" ]]; then
+    $EDITOR "${HOME}/.config/rustic/${profile}.toml"
+    exit
+  else
+    xdg-open "${HOME}/.config/rustic/${profile}.toml"
+  fi
+}
+export -f sub_edit
+
+function sub_backup() {
+  if [[ $SUBHELP ]]; then
+    _w "Usage: $progname backup [profile_name] [-y|--yes]"
+    _w ""
+    _w "       If no profile name is provided, then all profiles in '$HOME/.config/rustic' will be backed up."
+    _w "       Profile names must be given without 'toml' file extension."
+    _w "       Use -y or --yes to backup all profiles without confirmation."
+    _w ""
+    return
+  fi
+
+  profile="$1"
+
+  if [[ -z $profile ]]; then
+    if [[ $PROCEED ]]; then
+      doAll backup
+    else
+      read -p "All profiles will be backed up. Proceed? (y/n): " -n 1 -er answer
+      if [[ "$answer" =~ ^Y|y$ ]]; then
+        doAll backup
+      else
+        echo "Backup aborted."
+        exit
+      fi
+    fi
+  else
+    p="$HOME/.config/rustic/${profile}.toml"
+    if [[ -f "${p}" ]]; then
+      eval "$(grep -E ^repository "${p}" | tr -d ' ')"
+      if [[ -n "${repository}" ]]; then
+        if [[ -d "${repository}" ]]; then
+          $RUSTIC -P "$profile" backup
+        else
+          _e "Repository for profile \"$profile\" is not accessible. 
+It is pointing to ${repository}."
+          exit
+        fi
+      fi
+    else
+      _e "No such profile in '$HOME/.config/rustic'."
+      exit 1
+    fi
+  fi
+
+  return
+}
+export -f sub_backup
+
+function sub_forget() {
+  if [[ $SUBHELP ]]; then
+    _w "Usage: $progname forget [profile_name] [-y|--yes]"
+    _w ""
+    _w "       If no profile name is provided, then all profiles in '$HOME/.config/rustic' will be cleaned"
+    _w "       according to their forget settings.."
+    _w "       Profile names must be given without 'toml' file extension."
+    _w "       Use -y or --yes to clean all profiles without confirmation."
+    _w ""
+    return
+  fi
+
+  profile="$1"
+
+  if [[ -z $profile ]]; then
+    if [[ $PROCEED ]]; then
+      doAll forget
+    else
+      read -p "All profiles will be cleaned. Proceed? (y/n): " -n 1 -er answer
+      if [[ "$answer" =~ ^Y|y$ ]]; then
+        doAll forget
+      else
+        echo "Cleaning aborted."
+        exit
+      fi
+    fi
+  else
+    p="$HOME/.config/rustic/${profile}.toml"
+    if [[ -f "${p}" ]]; then
+      eval "$(grep -E ^repository "${p}" | tr -d ' ')"
+      if [[ -n "${repository}" ]]; then
+        if [[ -d "${repository}" ]]; then
+          $RUSTIC -P "${profile}" forget --prune --instant-delete
+        else
+          _e "Repository for profile \"$profile\" is not accessible.
+It is pointing to ${repository}."
+          exit
+        fi
+      fi
+    else
+      _e "No such profile in '$HOME/.config/rustic'."
+      exit 1
+    fi
+  fi
+
+  return
+}
+export -f sub_forget
+#-------------------------
+#  sub_command handling
+#-------------------------
+case $subcommand in
+"" | "-h" | "--help" | "help")
+  sub_default
+  ;;
+*)
+  shift
+  if [[ "$(type -t "sub_${subcommand}")" == 'function' ]]; then
+    "sub_${subcommand}" "$@"
+    exit $?
+  else
+    _e "Error: '${subcommand}' is not a known subcommand." >&2
+    _e "Run '${progname} --help' for a list of known subcommands." >&2
+    exit 1
+  fi
+  ;;
+esac
