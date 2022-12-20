@@ -3,7 +3,7 @@
 # https://stackoverflow.com/questions/5302650/multi-level-bash-completion
 
 # have wpsite &&
-_pbt_complete()
+_backupstic_complete()
 {
   local cur prev
 
@@ -12,10 +12,10 @@ _pbt_complete()
   prev=${COMP_WORDS[COMP_CWORD-1]}
 
   if [ "$COMP_CWORD" -eq 1 ]; then
-    COMPREPLY=( $(compgen -W "backup forget create edit" -- $cur) )
+    COMPREPLY=( $(compgen -W "backup forget create edit init" -- $cur) )
   elif [ "$COMP_CWORD" -eq 2 ]; then
     case "$prev" in
-      "backup"|"forget"|"edit")
+      "backup"|"forget"|"edit"|"init")
           COMPREPLY=($( compgen -W "$(find "$HOME/.config/rustic/" -type f -name '*.toml' -exec basename {} .toml \;)" -- $cur ) )
         ;;
       *)
@@ -25,5 +25,5 @@ _pbt_complete()
 
   return 0
 }
-complete -F _pbt_complete backupstic
-complete -F _pbt_complete upstic
+complete -F _backupstic_complete backupstic
+complete -F _backupstic_complete upstic
