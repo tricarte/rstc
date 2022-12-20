@@ -103,6 +103,19 @@ It is pointing to ${repository}."
   fi
 }
 
+function edit() {
+  local profile="$1"
+  if [[ -n "$VISUAL" ]]; then
+    $VISUAL "${profile}"
+    exit
+  elif [[ -n "$EDITOR" ]]; then
+    $EDITOR "${profile}"
+    exit
+  else
+    xdg-open "${profile}"
+  fi
+}
+
 #----------------
 #  SUBCOMMANDS
 #----------------
@@ -152,7 +165,7 @@ function sub_create() {
   fi
 
   echo '[global]
-repository = "/media/change_me_username/change_me_deviceID/rustic-backups/documents"
+repository = "/media/change_me_username/change_me_deviceID/rustic-backups/repo-dir"
 # password-file =  "/root/key-rustic"
 no-cache = true # no cache needed for local repository
 password-command = "gpg --no-tty -q -d /etc/.rustic-pass.gpg"
@@ -169,11 +182,12 @@ keep-daily = 3
 one-filesystem = true
 
 [[backup.sources]]
-source = "/home/change_me_username/Documents"' >"${HOME}/.config/rustic/${profile}.toml"
+# source = "/home/change_me_username/Documents"' >"${HOME}/.config/rustic/${profile}.toml"
 
   if [[ -f "${HOME}/.config/rustic/${1}.toml" ]]; then
     if [[ $EDIT ]]; then
-      $(command -v vim) "${HOME}/.config/rustic/${profile}.toml"
+      profile="${HOME}/.config/rustic/${profile}.toml"
+      edit "$profile"
     else
       _w "Profile successfully created."
     fi
@@ -205,17 +219,35 @@ function sub_edit() {
     exit 1
   fi
 
-  if [[ -n "$VISUAL" ]]; then
-    $VISUAL "${HOME}/.config/rustic/${profile}.toml"
-    exit
-  elif [[ -n "$EDITOR" ]]; then
-    $EDITOR "${HOME}/.config/rustic/${profile}.toml"
-    exit
-  else
-    xdg-open "${HOME}/.config/rustic/${profile}.toml"
-  fi
+  edit "${HOME}/.config/rustic/${profile}.toml"
+  exit
 }
 export -f sub_edit
+
+function sub_init() {
+  if [[ $SUBHELP ]]; then
+    _w "Usage: $progname init [profile_name]"
+    _w ""
+    _w "       Initialize the profile you have previously created with 'create' command."
+    _w ""
+    return
+  fi
+
+  profile="$1"
+
+  if [[ -z "$profile" ]]; then
+    _e "You did not specify the profile name."
+    exit 1
+  fi
+
+  if [[ ! -f "${HOME}/.config/rustic/${profile}.toml" ]]; then
+    _e "Profile does not exist."
+    exit 1
+  fi
+
+  $RUSTIC -P "${profile}" init
+}
+export -f sub_init
 
 function sub_backup() {
   if [[ $SUBHELP ]]; then
