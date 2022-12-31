@@ -164,8 +164,16 @@ function sub_create() {
     exit
   fi
 
-  echo '[global]
-repository = "/media/change_me_username/change_me_deviceID/rustic-backups/repo-dir"
+  user=$(getent passwd 1000 | cut -d':' -f1)
+
+  media=$(lsblk -o MOUNTPOINT | grep -E ^/media/"${user}" | head -n1)
+  if [[ -d $media ]]; then
+    media=$(basename "${media}")
+  fi
+
+  cat <<EOT >"${HOME}/.config/rustic/${profile}.toml"
+[global]
+repository = "/media/${user}/${media:=change_me_deviceID}/rustic-backups/${profile}"
 # password-file =  "/root/key-rustic"
 no-cache = true # no cache needed for local repository
 password-command = "gpg --no-tty -q -d /etc/.rustic-pass.gpg"
@@ -182,7 +190,8 @@ keep-daily = 3
 one-filesystem = true
 
 [[backup.sources]]
-# source = "/home/change_me_username/Documents"' >"${HOME}/.config/rustic/${profile}.toml"
+# source = "/home/${USER}/Documents"
+EOT
 
   if [[ -f "${HOME}/.config/rustic/${1}.toml" ]]; then
     if [[ $EDIT ]]; then
