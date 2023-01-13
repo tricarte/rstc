@@ -134,6 +134,9 @@ Subcommands:
     ${purple}backup${normal}          Backup all profiles or a specific profile.
     ${purple}forget${normal}          Prune snapshots according to 'forget' settings in the profile.
     ${purple}create${normal}          Create a new profile.
+    ${purple}init${normal}            Initialize the profile you have previously created with 'create' command.
+    ${purple}edit${normal}            Start editing the profile in your configured text editor.
+    ${purple}go${normal}              Run backup and forget in one go.
 
 For help with each subcommand run:
 ${purple}$progname <subcommand> -h|--help${normal}
@@ -211,7 +214,7 @@ function sub_edit() {
   if [[ $SUBHELP ]]; then
     _w "Usage: $progname edit [profile_name]"
     _w ""
-    _w "       Start editing the profile in vim."
+    _w "       Start editing the profile in your configured text editor."
     _w ""
     return
   fi
@@ -359,7 +362,7 @@ function sub_go() {
   if [[ $SUBHELP ]]; then
     _w "Usage: $progname go"
     _w ""
-    _w "       Run backup and forget in one go"
+    _w "       Run backup and forget in one go."
     _w ""
     return
   fi
