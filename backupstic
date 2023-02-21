@@ -179,7 +179,8 @@ function sub_create() {
 repository = "/media/${user}/${media:=change_me_deviceID}/rustic-backups/${profile}"
 # password-file =  "/root/key-rustic"
 no-cache = true # no cache needed for local repository
-password-command = "gpg --no-tty -q -d /etc/.rustic-pass.gpg"
+# password-command = "gpg --no-tty -q -d /etc/.rustic-pass.gpg"
+password-command = "gpg -q -d --pinentry-mode loopback /etc/.rustic-pass.gpg"
 
 [forget]
 # keep-hourly = 20
