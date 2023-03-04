@@ -368,7 +368,7 @@ export -f sub_forget
 
 function sub_go() {
   if [[ $SUBHELP ]]; then
-    _w "Usage: $progname go"
+    _w "Usage: $progname go [profile_name]"
     _w ""
     _w "       Run backup and forget in one go for a single or all profiles."
     _w ""

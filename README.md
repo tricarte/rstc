@@ -29,23 +29,33 @@ source "$HOME/repos/backupstic/.backupstic-completion.bash"
 | Command        | Description |
 | -------------- | -----------|
 | create         | Create a new backup profile in ~/.config/rustic. |
+| init           | Initialize the profile you have previously created with 'create' command. |
 | backup         | Backup a specific profile or all profiles in ~/.config/rustic. |
 | edit           | Open the profile in your favorite editor. |
 | forget         | Delete old snapshots of a profile according to the forget settings. |
+| go             | Run backup and forget in one go. |
 
 ## Creating a new backup profile
 
-`backupstic create profile_name`
+```bash
+backupstic create profile_name
+```
 
-`backupstic edit profile_name`
+```bash
+backupstic edit profile_name
+```
 
 Above command will open the profile in your text editor. Set the repository and
 the backup sources.
 
-`backupstic init profile_name`
+Below will initialize the repository that you have set in above step.
 
-This will create the repository that you have set in above step.
-
-`backupstic backup profile_name`
+```bash
+backupstic init profile_name
+```
 
 Finally backup the profile.
+
+```bash
+backupstic backup profile_name
+```
