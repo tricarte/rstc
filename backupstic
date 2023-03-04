@@ -138,6 +138,13 @@ Subcommands:
     ${purple}edit${normal}            Start editing the profile in your configured text editor.
     ${purple}go${normal}              Run backup and forget in one go.
 
+Generally a backup procedure should go like this:
+
+    ${progname} create profile_name
+    ${progname} edit profile_name
+    ${progname} init profile_name
+    ${progname} backup profile_name
+
 For help with each subcommand run:
 ${purple}$progname <subcommand> -h|--help${normal}
 "
@@ -363,12 +370,25 @@ function sub_go() {
   if [[ $SUBHELP ]]; then
     _w "Usage: $progname go"
     _w ""
-    _w "       Run backup and forget in one go."
+    _w "       Run backup and forget in one go for a single or all profiles."
     _w ""
     return
   fi
 
-  $progname backup -y && $progname forget -y
+  PROFILE="${1}"
+
+  if [[ -n "${PROFILE}" ]]; then
+    if [[ -f "${HOME}/.config/rustic/${PROFILE}.toml" ]]; then
+      $progname backup "${PROFILE}" && $progname forget "${PROFILE}"
+      exit
+    else
+      _e "Profile does not exist."
+      exit 1
+    fi
+  else
+    $progname backup -y && $progname forget -y
+  fi
+
   return
 }
 export -f sub_go
