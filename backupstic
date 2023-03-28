@@ -38,6 +38,18 @@ if [[ ! $RUSTIC ]]; then
   exit 1
 fi
 
+FZF=$(command -v fzf)
+if [[ -z $FZF ]]; then
+  _e "FZF is not installed."
+  exit 1
+fi
+
+LF=$(command -v lf)
+if [[ -z $LF ]]; then
+  _e "lf is not installed."
+  exit 1
+fi
+
 if [[ -n "$XDG_CURRENT_DESKTOP" ]]; then
   NOTIFYBIN=$(command -v notify-send)
 fi
@@ -389,6 +401,90 @@ function sub_go() {
   return
 }
 export -f sub_go
+
+function sub_restore() {
+  if [[ $SUBHELP ]]; then
+    _w "Usage: $progname restore profile_name [-y|--yes]"
+    _w ""
+    _w "       Restore a backup profile that is stored in '~/.config/rustic'"
+    _w "       to a location of your choice. Profile names must be given "
+    _w "       without 'toml' file extension."
+    _w ""
+    return
+  fi
+
+  profile="$1"
+  if [[ -z "${profile}" ]]; then
+    $progname restore --help
+    return
+  fi
+
+  if [[ -f "${HOME}/.config/rustic/${profile}.toml" ]]; then
+    _w "Getting the repository information..."
+    if $RUSTIC -P "${profile}" repoinfo >/dev/null 2>&1; then
+      json=$(
+        $RUSTIC --log-level OFF -P "${profile}" snapshots latest --json |
+          jq -r '.[][0].paths[]' |
+          sed -e '/^$/d'
+      )
+      paths=$(
+        printf '%s' "${json}" |
+          $FZF --bind 'ctrl-a:toggle-all' --multi \
+            --header='Use Tab/Shift+Tab to (de)select multiple paths, Ctrl+A to toggle selection.'
+      )
+      tmp="$(mktemp)"
+      $LF -single -config NONE \
+        -command 'echo Select a destination directory...' \
+        -command 'set dironly' \
+        -command 'set nopreview' \
+        -command 'set incsearch' \
+        -last-dir-path="${tmp}"
+      if [[ -f "${tmp}" ]]; then
+        destination="$(cat "${tmp}")"
+        rm -f "${tmp}"
+        # FIXME: /tmp/tmp.dir/home/user/some-backup
+        # /tmp/tmp.dir/* can be copied to / (root)
+        # even though the / is not writable.
+        if [[ -w "${destination}" ]]; then
+          if [[ ! $PROCEED ]]; then
+              printf '\n%s\n%s\n' "Path(s) to restore:" "${paths}"
+            printf '\n%s\n' "Destination directory: ${destination}"
+            read -p "Proceed to restore?  (y/n): " -r
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+              _w "Restore aborted."
+              return 1
+            fi
+          fi
+          while IFS=$'\n' read -r item; do
+            _w "Restoring ${item}..."
+            tmp="$(mktemp -d)"
+            if ! $RUSTIC --log-level OFF --no-progress -P "${profile}" restore latest --filter-paths "${item}" "${tmp}"; then
+              _e "Restore aborted due to error!"
+              _e "${item} could not be restored to ${destination}."
+              return 1
+            fi
+            cp -R -f "${tmp}"/* "${destination}"/
+            rm -R -f "${tmp}"
+            _w ""
+          done < <(printf '%s\n' "${paths}")
+          _w "Restore to ${destination} completed!"
+        else
+          _e "Selected destination '${destination}' is not writable."
+          return 1
+        fi
+      fi
+    else
+      _e "The directory containing the repository is not accessible."
+      exit 1
+    fi
+  else
+    _e "No such profile in '${HOME}/.config/rustic'."
+    exit 1
+  fi
+
+  return
+}
+export -f sub_restore
 
 #-------------------------
 #  sub_command handling

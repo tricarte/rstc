@@ -7,6 +7,8 @@ either backs up them or deletes the old snapshots.
 ## Requirements
 
 * [ rustic ](https://github.com/rustic-rs/rustic)
+* [ fzf ](https://github.com/junegunn/fzf)
+* [ lf ](https://github.com/gokcehan/lf)
 
 ## Installation
 
@@ -31,6 +33,7 @@ source "$HOME/repos/backupstic/.backupstic-completion.bash"
 | create         | Create a new backup profile in ~/.config/rustic. |
 | init           | Initialize the profile you have previously created with 'create' command. |
 | backup         | Backup a specific profile or all profiles in ~/.config/rustic. |
+| restore        | Restore a specific profile in ~/.config/rustic. |
 | edit           | Open the profile in your favorite editor. |
 | forget         | Delete old snapshots of a profile according to the forget settings. |
 | go             | Run backup and forget in one go. |
