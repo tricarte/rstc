@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # -------------------------------------------------------------------------
-# backupstic: A simple wrapper script for rustic backup tool
+# rstc: A simple wrapper script for rustic backup tool
 # -------------------------------------------------------------------------
-# GitHub: https://github.com/tricarte/backupstic
+# GitHub: https://github.com/tricarte/rstc
 # -------------------------------------------------------------------------
 
 #--------------------------
@@ -100,10 +100,10 @@ function doAll() {
       if [[ -d "$repository" ]]; then
         case $1 in
         forget)
-          $RUSTIC -P "$profile" forget --prune --instant-delete || break
+          $RUSTIC --no-progress --log-level OFF -P "$profile" forget --prune --instant-delete || break
           ;;
         backup)
-          $RUSTIC -P "$profile" backup || break
+          $RUSTIC --no-progress --log-level OFF -P "$profile" backup || break
           ;;
         esac
       else
@@ -208,9 +208,6 @@ keep-daily = 3
 # keep-weekly = 8
 # keep-monthly = 24
 # keep-yearly = 10
-
-[[backup.sources]]
-# source = "/home/${USER}/Documents"
 EOT
 
   if [[ -f "${HOME}/.config/rustic/${1}.toml" ]]; then
@@ -309,10 +306,10 @@ function sub_backup() {
       eval "$(grep -E ^repository "${p}" | tr -d ' ')"
       if [[ -n "${repository}" ]]; then
         if [[ -d "${repository}" ]]; then
-          $RUSTIC -P "$profile" backup
+          $RUSTIC --no-progress --log-level OFF -P "$profile" backup
         else
-          _e "Repository for profile \"$profile\" is not accessible. 
-It is pointing to ${repository}."
+          _e "Repository for profile \"$profile\" is not accessible."
+          _e "It is pointing to ${repository}."
           exit
         fi
       fi
@@ -420,18 +417,25 @@ function sub_restore() {
   fi
 
   if [[ -f "${HOME}/.config/rustic/${profile}.toml" ]]; then
-    _w "Getting the repository information..."
+    _w "Getting repository information..."
     if $RUSTIC -P "${profile}" repoinfo >/dev/null 2>&1; then
       json=$(
         $RUSTIC --log-level OFF -P "${profile}" snapshots latest --json |
           jq -r '.[][0].paths[]' |
           sed -e '/^$/d'
       )
+
       paths=$(
         printf '%s' "${json}" |
           $FZF --bind 'ctrl-a:toggle-all' --multi \
             --header='Use Tab/Shift+Tab to (de)select multiple paths, Ctrl+A to toggle selection.'
       )
+
+      if [[ -z "${paths}" ]]; then
+          _e 'You did not choose any path to restore!'
+          exit 1
+      fi
+
       tmp="$(mktemp)"
       $LF -single -config NONE \
         -command 'echo Select a destination directory...' \
@@ -439,6 +443,7 @@ function sub_restore() {
         -command 'set nopreview' \
         -command 'set incsearch' \
         -last-dir-path="${tmp}"
+
       if [[ -f "${tmp}" ]]; then
         destination="$(cat "${tmp}")"
         rm -f "${tmp}"

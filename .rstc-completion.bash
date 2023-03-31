@@ -2,8 +2,7 @@
 
 # https://stackoverflow.com/questions/5302650/multi-level-bash-completion
 
-# have wpsite &&
-_backupstic_complete() {
+_rstc_complete() {
   local cur prev
 
   COMPREPLY=()
@@ -24,5 +23,4 @@ _backupstic_complete() {
 
   return 0
 }
-complete -F _backupstic_complete backupstic
-complete -F _backupstic_complete upstic
+complete -F _rstc_complete rstc
