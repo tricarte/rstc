@@ -15,8 +15,6 @@ either backs up them or deletes the old snapshots.
 ```
 git clone "https://github.com/tricarte/rstc" "$HOME/repos/rstc"
 chmod +x "$HOME/repos/rstc/rstc"
-# Optional renaming
-sudo ln -s "$HOME/repos/rstc/rstc" "/usr/local/bin/upstic"
 ```
 
 Source the included completion file from your .bashrc file to enable shell
