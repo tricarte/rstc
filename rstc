@@ -357,7 +357,7 @@ function sub_forget() {
         if [[ -d "${repository}" ]]; then
           $RUSTIC -P "${profile}" forget --prune --instant-delete
         else
-          _e "Repository for profile \"$profile\" is not accessible.
+          _e "Repository for profile \"$profile\" is not accessible."
           _e "It is pointing to ${repository}."
           exit
         fi
