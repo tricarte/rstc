@@ -54,6 +54,33 @@ if [[ -n "$XDG_CURRENT_DESKTOP" ]]; then
   NOTIFYBIN=$(command -v notify-send)
 fi
 
+if [[ ! -f /etc/.rustic-pass.gpg ]]; then
+  _w ""
+  _a "/etc/.rustic-pass.gpg does not exist. Creating..."
+  _w ""
+  _w "First give a passphrase for this encrypted file,"
+  _w "then type the password to be used when working with backup repositories,"
+  _w "then press the Enter key and then Ctrl+D to exit."
+  _w "BEWARE! What you enter will be visible on the screen."
+  _w ""
+  tmp="$(mktemp --dry-run)"
+  if gpg --pinentry-mode loopback --output "${tmp}" --symmetric -; then
+    if [[ -f "${tmp}" ]]; then
+      user="$(whoami)"
+      sudo mv "${tmp}" /etc/.rustic-pass.gpg &&
+        sudo chown "${user}:${user}" /etc/.rustic-pass.gpg &&
+        sudo chmod 600 /etc/.rustic-pass.gpg &&
+        _w "Password file successfully created." &&
+        exit
+    fi
+  fi
+fi
+
+if [[ ! -f /etc/.rustic-pass.gpg ]]; then
+  _e "Password file /etc/.rustic-pass.gpg could not be created."
+  exit 1
+fi
+
 #-------------------------
 # End of prerequisites
 #-------------------------
