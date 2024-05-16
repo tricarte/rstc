@@ -64,7 +64,7 @@ if [[ ! -f /etc/.rustic-pass.gpg ]]; then
   _w "BEWARE! What you enter will be visible on the screen."
   _w ""
   tmp="$(mktemp --dry-run)"
-  if gpg --pinentry-mode loopback --output "${tmp}" --symmetric -; then
+  if gpg -q --pinentry-mode loopback --output "${tmp}" --symmetric -; then
     if [[ -f "${tmp}" ]]; then
       user="$(whoami)"
       sudo mv "${tmp}" /etc/.rustic-pass.gpg &&
