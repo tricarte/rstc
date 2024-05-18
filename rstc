@@ -176,6 +176,7 @@ Subcommands:
     ${purple}init${normal}            Initialize the profile you have previously created with 'create' command.
     ${purple}edit${normal}            Start editing the profile in your configured text editor.
     ${purple}go${normal}              Run backup and forget in one go.
+    ${purple}snapshots${normal}       List snapshots of a backup profile.
 
 Generally a backup procedure should go like this:
 
@@ -517,6 +518,44 @@ function sub_restore() {
   return
 }
 export -f sub_restore
+
+function sub_snapshots() {
+  if [[ $SUBHELP ]]; then
+    _w "Usage: $progname snapshots [profile_name]"
+    _w ""
+    _w "       List the snapshots of a profile in '$HOME/.config/rustic'."
+    _w "       Profile names must be given without 'toml' file extension."
+    _w ""
+    return
+  fi
+
+  profile="$1"
+
+  if [[ -z $profile ]]; then
+      _e "Provide a profile name from '$HOME/.config/rustic'."
+      exit 1
+  else
+    p="$HOME/.config/rustic/${profile}.toml"
+    if [[ -f "${p}" ]]; then
+      eval "$(grep -E ^repository "${p}" | tr -d ' ')"
+      if [[ -n "${repository}" ]]; then
+        if [[ -d "${repository}" ]]; then
+          $RUSTIC --no-progress --log-level OFF -P "$profile" snapshots
+        else
+          _e "Repository for profile \"$profile\" is not accessible."
+          _e "It is pointing to ${repository}."
+          exit
+        fi
+      fi
+    else
+      _e "No such profile in '$HOME/.config/rustic'."
+      exit 1
+    fi
+  fi
+
+  return
+}
+export -f sub_snapshots
 
 #-------------------------
 #  sub_command handling

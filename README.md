@@ -36,6 +36,7 @@ source "$HOME/repos/rstc/.rstc-completion.bash"
 | edit           | Open the profile in your favorite editor. |
 | forget         | Delete old snapshots of a profile according to the forget settings. |
 | go             | Run backup and forget in one go. |
+| snapshots      | List snapshots of a backup profile. |
 
 ## Creating a new backup profile
 
