@@ -64,7 +64,8 @@ if [[ ! -f /etc/.rustic-pass.gpg ]]; then
   _w "BEWARE! What you enter will be visible on the screen."
   _w ""
   tmp="$(mktemp --dry-run)"
-  if gpg -q --pinentry-mode loopback --output "${tmp}" --symmetric -; then
+  # if gpg -q --pinentry-mode loopback --output "${tmp}" --symmetric -; then
+  if gpg -q --output "${tmp}" --symmetric -; then
     if [[ -f "${tmp}" ]]; then
       user="$(whoami)"
       sudo mv "${tmp}" /etc/.rustic-pass.gpg &&
@@ -227,7 +228,8 @@ repository = "/media/${user}/${media:=change_me_deviceID}/rustic-backups/${profi
 # password-file =  "/root/key-rustic"
 no-cache = true # no cache needed for local repository
 # password-command = "gpg --no-tty -q -d /etc/.rustic-pass.gpg"
-password-command = "gpg -q -d --pinentry-mode loopback /etc/.rustic-pass.gpg"
+# password-command = "gpg -q -d --pinentry-mode loopback /etc/.rustic-pass.gpg"
+password-command = "gpg -q -d /etc/.rustic-pass.gpg"
 
 [forget]
 # keep-hourly = 20
