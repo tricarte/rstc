@@ -11,12 +11,14 @@ _rstc_complete() {
 
   if [ "$COMP_CWORD" -eq 1 ]; then
     COMPREPLY=($(compgen -W "backup forget create edit init go restore snapshots" -- $cur))
-  elif [ "$COMP_CWORD" -eq 2 ]; then
+  elif [ "$COMP_CWORD" -ge 2 ]; then
     case "$prev" in
     "backup" | "forget" | "edit" | "init" | "go" | "restore" | "snapshots")
       COMPREPLY=($(compgen -W "$(find "$HOME/.config/rustic/" -type f -name '*.toml' -exec basename {} .toml \;)" -- $cur))
       ;;
-    *) ;;
+    *)
+      COMPREPLY=($(compgen -W "$(find "$HOME/.config/rustic/" -type f -name '*.toml' -exec basename {} .toml \;)" -- $cur))
+      ;;
 
     esac
   fi
