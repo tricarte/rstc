@@ -136,7 +136,7 @@ function doAll() {
         esac
       else
         _e "Repository for profile \"$profile\" is not accessible.
-It is pointing to ${repository}."
+                It is pointing to ${repository}."
         exit 1
       fi
     done
@@ -165,11 +165,11 @@ function edit() {
 #------------------------------------------------------
 function sub_default() {
   _w "
-${progname}: A wrapper script for rustic. Works only with backup profiles.
+    ${progname}: A wrapper script for rustic. Works only with backup profiles.
 
     Usage: ${purple}${progname} <subcommand> [optional_profile_name] OPTIONS${normal}
 
-Subcommands:
+    Subcommands:
 
     ${purple}backup${normal}          Backup all profiles or a specific profile.
     ${purple}forget${normal}          Prune snapshots according to 'forget' settings in the profile.
@@ -179,16 +179,16 @@ Subcommands:
     ${purple}go${normal}              Run backup and forget in one go.
     ${purple}snapshots${normal}       List snapshots of a backup profile.
 
-Generally a backup procedure should go like this:
+    Generally a backup procedure should go like this:
 
     ${progname} create profile_name
     ${progname} edit profile_name
     ${progname} init profile_name
     ${progname} backup profile_name
 
-For help with each subcommand run:
-${purple}$progname <subcommand> -h|--help${normal}
-"
+    For help with each subcommand run:
+        ${purple}$progname <subcommand> -h|--help${normal}
+        "
   exit
 }
 export -f sub_default
@@ -406,24 +406,29 @@ function sub_go() {
   if [[ $SUBHELP ]]; then
     _w "Usage: $progname go [profile_name]"
     _w ""
-    _w "       Run backup and forget in one go for a single or all profiles."
+    _w "       Run backup and forget for one or more or all profiles."
     _w ""
     return
   fi
 
-  PROFILE="${1}"
+  PROFILES="${@}"
 
-  if [[ -n "${PROFILE}" ]]; then
-    if [[ -f "${HOME}/.config/rustic/${PROFILE}.toml" ]]; then
-      $progname backup "${PROFILE}" && $progname forget "${PROFILE}"
-      exit
-    else
-      _e "Profile does not exist."
-      exit 1
-    fi
-  else
+  if [[ -z ${PROFILES} ]]; then
     $progname backup -y && $progname forget -y
   fi
+
+  for PROFILE in ${PROFILES}; do
+    if [[ -n "${PROFILE}" ]]; then
+      if [[ -f "${HOME}/.config/rustic/${PROFILE}.toml" ]]; then
+        $progname backup "${PROFILE}" && $progname forget "${PROFILE}"
+      else
+        _e "Profile ${PROFILE} does not exist."
+        exit 1
+      fi
+    else
+      $progname backup -y && $progname forget -y
+    fi
+  done
 
   return
 }
@@ -462,8 +467,8 @@ function sub_restore() {
       )
 
       if [[ -z "${paths}" ]]; then
-          _e 'You did not choose any path to restore!'
-          exit 1
+        _e 'You did not choose any path to restore!'
+        exit 1
       fi
 
       tmp="$(mktemp)"
@@ -482,7 +487,7 @@ function sub_restore() {
         # even though the / is not writable.
         if [[ -w "${destination}" ]]; then
           if [[ ! $PROCEED ]]; then
-              printf '\n%s\n%s\n' "Path(s) to restore:" "${paths}"
+            printf '\n%s\n%s\n' "Path(s) to restore:" "${paths}"
             printf '\n%s\n' "Destination directory: ${destination}"
             read -p "Proceed to restore?  (y/n): " -r
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -534,8 +539,8 @@ function sub_snapshots() {
   profile="$1"
 
   if [[ -z $profile ]]; then
-      _e "Provide a profile name from '$HOME/.config/rustic'."
-      exit 1
+    _e "Provide a profile name from '$HOME/.config/rustic'."
+    exit 1
   else
     p="$HOME/.config/rustic/${profile}.toml"
     if [[ -f "${p}" ]]; then
